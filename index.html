@@ -1,154 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora de Derivadas - Paso a Paso</title>
-
-  <!-- Librerías necesarias -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
-  <script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f7f7f7;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #333;
-    }
-    input {
-      padding: 8px;
-      width: 300px;
-      font-size: 1rem;
-    }
-    button {
-      padding: 8px 15px;
-      margin: 5px;
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    #output {
-      margin-top: 20px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: left;
-      max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
-      box-shadow: 0px 0px 5px rgba(0,0,0,0.1);
-    }
-    #plot {
-      margin-top: 20px;
-    }
-    code {
-      background: #eee;
-      padding: 2px 5px;
-      border-radius: 4px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Derivadas</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="container">
+        <h1>Calculadora de Derivadas</h1>
+        <form method="POST" action="/">
+            <label for="expression">Ingrese la función a derivar:</label>
+            <input type="text" id="expression" name="expression" placeholder="Ejemplo: x**3 + 2*x" required>
 
-<h1>📈 Calculadora de Derivadas</h1>
-<p>Escribe una función en <b>x</b> (Ejemplo: <code>x^3 + 2x</code> o <code>sin(x)*x^2</code>)</p>
+            <label for="variable">Variable respecto a la cual derivar:</label>
+            <input type="text" id="variable" name="variable" placeholder="Ejemplo: x" required>
 
-<input type="text" id="funcion" placeholder="Ej: x^3 + 2x">
-<br>
-<button onclick="resolverDerivada()">Calcular derivada</button>
-<button onclick="descargarPDF()">📄 Descargar PDF</button>
+            <button type="submit">Calcular Derivada</button>
+        </form>
 
-<div id="output"></div>
-<div id="plot"></div>
+        {% if result %}
+            <h2>Resultado de la Derivada:</h2>
+            <p>{{ result|safe }}</p>
+        {% endif %}
 
-<script>
-let pasosTexto = "";
+        {% if steps %}
+            <h3>Pasos del Cálculo:</h3>
+            <p>{{ steps|safe }}</p>
+        {% endif %}
 
-function resolverDerivada() {
-    const entrada = document.getElementById("funcion").value.trim();
-    if (!entrada) {
-        alert("Por favor ingresa una función.");
-        return;
-    }
+        {% if plot_url %}
+            <h3>Gráfica:</h3>
+            <img src="{{ plot_url }}" alt="Gráfica función y derivada">
+        {% endif %}
 
-    try {
-        // 1️⃣ Calcular derivada
-        const derivada = math.derivative(entrada, 'x').toString();
-        const derivadaSimplificada = math.simplify(derivada).toString();
-
-        // 2️⃣ Analizar y generar explicación
-        pasosTexto = `Cálculo de derivada para: f(x) = ${entrada}\n\n`;
-        let pasosHTML = `<h3>📝 Proceso de derivación:</h3>`;
-
-        const terminos = entrada.split("+").map(t => t.trim());
-        pasosHTML += `<ol>`;
-        terminos.forEach(t => {
-            if (/x\^?\d*/.test(t)) {
-                pasosHTML += `<li>Para <b>${t}</b>: Usamos la <b>Regla de la Potencia</b> → d/dx xⁿ = n·xⁿ⁻¹</li>`;
-                pasosTexto += `Término ${t}: Regla de la potencia aplicada.\n`;
-            } else if (/sin|cos|tan/.test(t)) {
-                pasosHTML += `<li>Para <b>${t}</b>: Usamos la <b>Regla de la Cadena</b> para funciones trigonométricas.</li>`;
-                pasosTexto += `Término ${t}: Regla de la cadena aplicada (función trigonométrica).\n`;
-            } else {
-                pasosHTML += `<li>Para <b>${t}</b>: Es constante, derivada = 0.</li>`;
-                pasosTexto += `Término ${t}: Constante, derivada = 0.\n`;
-            }
-        });
-        pasosHTML += `</ol>`;
-
-        // 3️⃣ Mostrar resultado final
-        pasosHTML += `<p>✅ <b>Derivada obtenida:</b> f'(x) = ${derivada}</p>`;
-        pasosHTML += `<p>📏 <b>Derivada simplificada:</b> f'(x) = ${derivadaSimplificada}</p>`;
-        pasosTexto += `\nDerivada final: ${derivadaSimplificada}`;
-
-        document.getElementById("output").innerHTML = pasosHTML;
-
-        // 4️⃣ Graficar función y derivada
-        functionPlot({
-            target: '#plot',
-            width: 600,
-            height: 400,
-            xAxis: { label: 'x' },
-            yAxis: { label: 'y' },
-            grid: true,
-            data: [
-                { fn: entrada, sampler: 'builtIn', graphType: 'polyline', color: 'blue', label: 'f(x)' },
-                { fn: derivadaSimplificada, sampler: 'builtIn', graphType: 'polyline', color: 'red', label: "f'(x)" }
-            ]
-        });
-
-    } catch (error) {
-        alert("Error en la función. Verifica la sintaxis.");
-        console.error(error);
-    }
-}
-
-// 5️⃣ Descargar PDF
-function descargarPDF() {
-    if (!pasosTexto) {
-        alert("Primero calcula la derivada.");
-        return;
-    }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Calculadora de Derivadas - Paso a Paso", 10, 10);
-    doc.setFontSize(11);
-    doc.text(pasosTexto, 10, 20);
-    doc.save("derivada.pdf");
-}
-</script>
-
+    </div>
 </body>
 </html>
