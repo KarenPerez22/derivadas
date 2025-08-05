@@ -1,203 +1,105 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Derivadas - Explicación de Profesor</title>
-
-<!-- Librerías -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
-<script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async
-  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
-
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f7f7f7;
-  margin: 0;
-  padding: 20px;
-  text-align: center;
-}
-h1 { color: #333; }
-input {
-  padding: 8px;
-  width: 320px;
-}
-button {
-  padding: 8px 15px;
-  margin: 5px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-button:hover { background: #0056b3; }
-#output {
-  margin-top: 20px;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: left;
-  max-width: 850px;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0px 0px 5px rgba(0,0,0,0.1);
-}
-#plot {
-  margin-top: 20px;
-}
-</style>
+    <meta charset="UTF-8">
+    <title>Derivadas paso a paso</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { text-align: center; }
+        input, button { padding: 8px; margin: 5px; }
+        .resultado { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 10px; }
+    </style>
 </head>
 <body>
+    <h1>📘 Derivadas paso a paso</h1>
+    <p>Introduce la función \(f(x)\):</p>
+    <input type="text" id="funcion" value="x^2" size="20">
+    <button onclick="calcular()">Calcular derivada</button>
 
-<h1>📈 Derivadas - Paso a Paso</h1>
-<p>Ingresa una función en \(x\) (Ej: <code>x^3 + 2x</code>, <code>sin(x)*x^2</code>, <code>(x^2+1)/(x-3)</code>)</p>
-
-<input type="text" id="funcion" placeholder="Ej: x^3 + 2x">
-<br>
-<button onclick="resolverDerivada()">Calcular derivada</button>
-
-<div id="output"></div>
-<div id="plot"></div>
+    <div class="resultado" id="explicacion"></div>
+    <div id="grafica" style="width:100%;height:500px;"></div>
 
 <script>
-// Detectar la regla principal que se debe aplicar
-function detectarRegla(expr) {
-    if (/\//.test(expr)) return "Cociente";
-    if (/\*/.test(expr)) return "Producto";
-    if (/(sin|cos|tan|log|exp)/.test(expr) && !/\*/.test(expr) && !/\//.test(expr)) return "Cadena";
-    if (/x\^/.test(expr)) return "Potencia";
-    if (/x/.test(expr)) return "Potencia simple";
-    return "Constante";
-}
-
-// Generar explicación estilo profesor
-function explicarPaso(expr, regla) {
-    switch(regla) {
-        case "Constante":
-            return `
-            <p><b>${expr}</b> es una constante.</p>
-            <p>Regla: La derivada de una constante es cero.</p>
-            \\[
-            \\frac{d}{dx}(c) = 0
-            \\]`;
-        case "Potencia":
-            return `
-            <p>Regla de la potencia:</p>
-            \\[
-            \\frac{d}{dx}x^n = n \\cdot x^{n-1}
-            \\]
-            <p>Aplicando a <b>${expr}</b>:</p>
-            \\[
-            ${math.derivative(expr, 'x')}
-            \\]`;
-        case "Potencia simple":
-            return `
-            <p><b>${expr}</b> es de la forma \(k \cdot x\).</p>
-            <p>La derivada de \(x\) es 1, por lo tanto:</p>
-            \\[
-            \\frac{d}{dx}(k x) = k
-            \\]
-            Resultado:
-            \\[
-            ${math.derivative(expr, 'x')}
-            \\]`;
-        case "Producto":
-            return `
-            <p>Identificamos que <b>${expr}</b> es un producto \(u \cdot v\).</p>
-            <p>Regla del producto:</p>
-            \\[
-            (uv)' = u'v + uv'
-            \\]
-            <p>Derivamos cada factor y sustituimos:</p>
-            \\[
-            ${math.derivative(expr, 'x')}
-            \\]`;
-        case "Cociente":
-            return `
-            <p>Identificamos que <b>${expr}</b> es un cociente \(\frac{u}{v}\).</p>
-            <p>Regla del cociente:</p>
-            \\[
-            \\left(\\frac{u}{v}\\right)' = \\frac{u'v - uv'}{v^2}
-            \\]
-            <p>Derivamos numerador y denominador, luego sustituimos:</p>
-            \\[
-            ${math.derivative(expr, 'x')}
-            \\]`;
-        case "Cadena":
-            return `
-            <p>Identificamos que <b>${expr}</b> es una función compuesta \(f(g(x))\).</p>
-            <p>Regla de la cadena:</p>
-            \\[
-            (f(g(x)))' = f'(g(x)) \cdot g'(x)
-            \\]
-            <p>Derivamos la función exterior y multiplicamos por la derivada de la interior:</p>
-            \\[
-            ${math.derivative(expr, 'x')}
-            \\]`;
-    }
-}
-
-function resolverDerivada() {
-    const entrada = document.getElementById("funcion").value.trim();
-    if (!entrada) {
-        alert("Por favor ingresa una función.");
-        return;
-    }
+function calcular() {
+    const math = window.math;
+    const funcionStr = document.getElementById("funcion").value;
 
     try {
-        const derivada = math.derivative(entrada, 'x').toString();
-        const derivadaSimplificada = math.simplify(derivada).toString();
+        // Usaremos math.js para cálculos simbólicos
+        // Creamos expresión f(x)
+        const parser = math.parser();
+        parser.evaluate(`f(x) = ${funcionStr}`);
 
-        let pasos = `<h3>📝 Explicación Paso a Paso</h3>`;
-        pasos += `<p>Función dada:</p> \\[ f(x) = ${entrada} \\]`;
+        // Simulación paso a paso
+        let pasos = "";
+        pasos += `<b>1️⃣ Fórmula de la derivada:</b><br>`;
+        pasos += `\\[
+            f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}
+        \\]<br><br>`;
 
-        // Analizar cada término de la suma
-        let terminos = entrada.split("+").map(t => t.trim());
-        terminos.forEach(t => {
-            let regla = detectarRegla(t);
-            pasos += explicarPaso(t, regla);
+        pasos += `<b>2️⃣ Sustituimos f(x) = ${funcionStr}:</b><br>`;
+        pasos += `\\[
+            f'(x) = \\lim_{h \\to 0} \\frac{(${funcionStr.replace(/x/g,"(x+h)")}) - (${funcionStr})}{h}
+        \\]<br><br>`;
+
+        // Expandimos y simplificamos usando math.js
+        const x = math.parse('x');
+        const h = math.parse('h');
+        const expr = math.parse(funcionStr);
+
+        const fxh = expr.transform(function (node) {
+            if (node.isSymbolNode && node.name === 'x') return math.parse('(x + h)');
+            return node;
         });
 
-        pasos += `
-        <hr>
-        <p>Sumando todos los resultados:</p>
-        \\[
-        f'(x) = ${derivada}
-        \\]
-        <p>Simplificando:</p>
-        \\[
-        f'(x) = ${derivadaSimplificada}
-        \\]
-        `;
+        const numerador = math.simplify(math.parse(`(${fxh.toString()}) - (${expr.toString()})`));
+        pasos += `<b>3️⃣ Simplificamos el numerador:</b><br>`;
+        pasos += `\\[
+            ${numerador.toString()}
+        \\]<br><br>`;
 
-        document.getElementById("output").innerHTML = pasos;
-        MathJax.typeset();
+        const cociente = math.simplify(`(${numerador.toString()}) / h`);
+        pasos += `<b>4️⃣ Dividimos entre h:</b><br>`;
+        pasos += `\\[
+            ${cociente.toString()}
+        \\]<br><br>`;
 
-        // Graficar
-        functionPlot({
-            target: '#plot',
-            width: 700,
-            height: 400,
-            xAxis: { label: 'x' },
-            yAxis: { label: 'y' },
-            grid: true,
-            data: [
-                { fn: entrada, sampler: 'builtIn', graphType: 'polyline', color: 'blue', label: 'f(x)' },
-                { fn: derivadaSimplificada, sampler: 'builtIn', graphType: 'polyline', color: 'red', label: "f'(x)" }
-            ]
-        });
+        const derivada = math.simplify(cociente.toString().replace(/h/g,"0")).toString();
+        pasos += `<b>5️⃣ Tomamos el límite cuando h → 0:</b><br>`;
+        pasos += `\\[
+            f'(x) = ${derivada}
+        \\]<br>`;
+
+        document.getElementById("explicacion").innerHTML = pasos;
+
+        MathJax.typeset(); // Renderiza fórmulas
+
+        // Gráfica
+        const f = (x) => parser.evaluate(`f(${x})`);
+        const df = (x) => parser.evaluate(derivada.replace(/x/g, `(${x})`));
+
+        let xs = [], ys1 = [], ys2 = [];
+        for (let xi = -10; xi <= 10; xi += 0.1) {
+            xs.push(xi);
+            ys1.push(f(xi));
+            ys2.push(df(xi));
+        }
+
+        const trace1 = { x: xs, y: ys1, type: 'scatter', name: 'f(x)' };
+        const trace2 = { x: xs, y: ys2, type: 'scatter', name: "f'(x)" };
+
+        Plotly.newPlot('grafica', [trace1, trace2], { title: 'Función y su derivada' });
 
     } catch (error) {
-        alert("Error en la función. Revisa la sintaxis.");
-        console.error(error);
+        document.getElementById("explicacion").innerHTML = `<b>Error:</b> Verifica que la función esté bien escrita.`;
     }
 }
 </script>
 
+<!-- Librería math.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
 </body>
 </html>
