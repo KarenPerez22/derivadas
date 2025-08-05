@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculadora de Derivadas - Paso a Paso</title>
+<title>Calculadora de Derivadas - Explicación Completa</title>
 
 <!-- Librerías -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
@@ -21,9 +21,7 @@ body {
   background: #f7f7f7;
   padding: 20px;
 }
-h1 {
-  color: #333;
-}
+h1 { color: #333; }
 input {
   padding: 8px;
   width: 300px;
@@ -37,23 +35,19 @@ button {
   cursor: pointer;
   border-radius: 5px;
 }
-button:hover {
-  background: #0056b3;
-}
+button:hover { background: #0056b3; }
 #output {
   margin-top: 20px;
   background: white;
   padding: 15px;
   border-radius: 8px;
   text-align: left;
-  max-width: 800px;
+  max-width: 850px;
   margin-left: auto;
   margin-right: auto;
   box-shadow: 0px 0px 5px rgba(0,0,0,0.1);
 }
-#plot {
-  margin-top: 20px;
-}
+#plot { margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -72,137 +66,130 @@ button:hover {
 <script>
 let pasosTexto = "";
 
-// Detectar tipo de término para explicar correctamente
-function detectarRegla(termino) {
-    if (/\//.test(termino)) return "Cociente";
-    if (/\*/.test(termino) && /(sin|cos|tan|log|exp)/.test(termino)) return "Producto + Cadena";
-    if (/\*/.test(termino)) return "Producto";
-    if (/(sin|cos|tan|log|exp)/.test(termino)) return "Cadena";
-    if (/x\^?\d*/.test(termino)) return "Potencia";
-    if (/x/.test(termino)) return "Potencia simple";
+// Detectar tipo de derivada
+function detectarRegla(funcion) {
+    if (/\//.test(funcion)) return "Cociente";
+    if (/\*/.test(funcion) && /(sin|cos|tan|log|exp)/.test(funcion)) return "Producto + Cadena";
+    if (/\*/.test(funcion)) return "Producto";
+    if (/(sin|cos|tan|log|exp)/.test(funcion)) return "Cadena";
+    if (/x\^?\d*/.test(funcion)) return "Potencia";
+    if (/x/.test(funcion)) return "Potencia simple";
     return "Constante";
 }
 
-// Generar explicación detallada de cada regla
-function explicacionRegla(termino, regla) {
+// Generar explicación detallada
+function explicacionDetallada(f, regla) {
     switch(regla) {
         case "Constante":
             return `
-            <b>${termino}</b> es una constante, y la derivada de cualquier constante es 0:
+            <p><b>${f}</b> es una constante.</p>
+            <p>La derivada de cualquier constante es cero:</p>
             \\[
             \\frac{d}{dx}(c) = 0
-            \\]
-            `;
+            \\]`;
         case "Potencia":
             return `
-            Aplicamos la regla de la potencia:
+            <p>Aplicamos la regla de la potencia:</p>
             \\[
             \\frac{d}{dx}x^n = n \\cdot x^{n-1}
             \\]
-            Para <b>${termino}</b>:
+            <p>Para <b>${f}</b>:</p>
             \\[
-            \\frac{d}{dx}(${termino}) = ${math.derivative(termino, 'x')}
-            \\]
-            `;
+            \\frac{d}{dx}(${f}) = ${math.derivative(f, 'x')}
+            \\]`;
         case "Potencia simple":
             return `
-            <b>${termino}</b> es de la forma \\(k \\cdot x\\).
-            Derivada de \\(x\\) es 1:
+            <p><b>${f}</b> es de la forma \(k \cdot x\).</p>
             \\[
             \\frac{d}{dx}(k x) = k
             \\]
-            Para <b>${termino}</b>:
+            <p>Entonces:</p>
             \\[
-            ${math.derivative(termino, 'x')}
-            \\]
-            `;
+            ${math.derivative(f, 'x')}
+            \\]`;
         case "Producto":
             return `
-            Usamos la regla del producto:
+            <p>Regla del producto:</p>
             \\[
-            (u \\cdot v)' = u'v + uv'
+            (u v)' = u'v + uv'
             \\]
-            Para <b>${termino}</b>:
-            Sea \\(u\\) el primer factor y \\(v\\) el segundo.
-            Derivamos cada uno y aplicamos la fórmula:
+            <p>Sea:</p>
             \\[
-            ${math.derivative(termino, 'x')}
+            u = \\text{primer factor}, \quad v = \\text{segundo factor}
             \\]
-            `;
+            <p>Derivamos cada uno y sustituimos:</p>
+            \\[
+            ${math.derivative(f, 'x')}
+            \\]`;
         case "Cociente":
             return `
-            Usamos la regla del cociente:
+            <p>Regla del cociente:</p>
             \\[
             \\left( \\frac{u}{v} \\right)' = \\frac{u'v - uv'}{v^2}
             \\]
-            Para <b>${termino}</b>:
+            <p>Sea:</p>
             \\[
-            ${math.derivative(termino, 'x')}
+            u = \\text{numerador}, \quad v = \\text{denominador}
             \\]
-            `;
+            <p>Derivamos y sustituimos:</p>
+            \\[
+            ${math.derivative(f, 'x')}
+            \\]`;
         case "Cadena":
             return `
-            Usamos la regla de la cadena:
+            <p>Regla de la cadena:</p>
             \\[
-            (f(g(x)))' = f'(g(x)) \\cdot g'(x)
+            (f(g(x)))' = f'(g(x)) \cdot g'(x)
             \\]
-            Para <b>${termino}</b>:
+            <p>Identificamos función exterior e interior, derivamos y sustituimos:</p>
             \\[
-            ${math.derivative(termino, 'x')}
-            \\]
-            `;
+            ${math.derivative(f, 'x')}
+            \\]`;
         case "Producto + Cadena":
             return `
-            Primero aplicamos la regla del producto:
+            <p>Primero regla del producto:</p>
             \\[
-            (u \\cdot v)' = u'v + uv'
+            (u v)' = u'v + uv'
             \\]
-            Luego, dentro de cada derivada, aplicamos la regla de la cadena cuando corresponda:
+            <p>Luego aplicamos cadena donde corresponda:</p>
             \\[
-            ${math.derivative(termino, 'x')}
-            \\]
-            `;
+            ${math.derivative(f, 'x')}
+            \\]`;
     }
 }
 
 function resolverDerivada() {
     const entrada = document.getElementById("funcion").value.trim();
-    if (!entrada) {
-        alert("Por favor ingresa una función.");
-        return;
-    }
+    if (!entrada) { alert("Por favor ingresa una función."); return; }
 
     try {
-        // Calcular derivada
         const derivada = math.derivative(entrada, 'x').toString();
         const derivadaSimplificada = math.simplify(derivada).toString();
-
-        pasosTexto = `Cálculo de derivada para: f(x) = ${entrada}\n\n`;
+        pasosTexto = `Cálculo paso a paso para: f(x) = ${entrada}\n\n`;
 
         let terminos = entrada.split("+").map(t => t.trim());
-        let explicacionHTML = `<h3>📝 Proceso paso a paso:</h3>`;
+        let html = `<h3>📝 Proceso paso a paso</h3>`;
 
         terminos.forEach(t => {
             let regla = detectarRegla(t);
-            explicacionHTML += `<p>${explicacionRegla(t, regla)}</p>`;
-            pasosTexto += `${t}: ${regla} -> ${math.derivative(t, 'x')}\n`;
+            html += explicacionDetallada(t, regla);
+            pasosTexto += `${t}: ${regla} → ${math.derivative(t, 'x')}\n`;
         });
 
-        explicacionHTML += `
+        html += `
         <hr>
-        <p>Sumamos los resultados de cada término:</p>
+        <p>Sumamos resultados:</p>
         \\[
         f'(x) = ${derivada}
         \\]
-        <p>Y simplificando:</p>
+        <p>Simplificamos:</p>
         \\[
         f'(x) = ${derivadaSimplificada}
-        \\]
-        `;
+        \\]`;
 
-        document.getElementById("output").innerHTML = explicacionHTML;
+        document.getElementById("output").innerHTML = html;
         MathJax.typeset();
-        pasosTexto += `\nDerivada final simplificada: ${derivadaSimplificada}`;
+        pasosTexto += `\nDerivada final: ${derivadaSimplificada}`;
 
         // Graficar
         functionPlot({
@@ -218,17 +205,14 @@ function resolverDerivada() {
             ]
         });
 
-    } catch (error) {
+    } catch (err) {
         alert("Error en la función. Revisa la sintaxis.");
-        console.error(error);
+        console.error(err);
     }
 }
 
 function descargarPDF() {
-    if (!pasosTexto) {
-        alert("Primero calcula la derivada.");
-        return;
-    }
+    if (!pasosTexto) { alert("Primero calcula la derivada."); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(14);
