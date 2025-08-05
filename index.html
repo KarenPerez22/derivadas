@@ -1,228 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculadora de Derivadas - Explicación Completa</title>
-
-<!-- Librerías -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
-<script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async
-  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
-
-<style>
-body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #f7f7f7;
-  padding: 20px;
-}
-h1 { color: #333; }
-input {
-  padding: 8px;
-  width: 300px;
-}
-button {
-  padding: 8px 15px;
-  margin: 5px;
-  background: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
-}
-button:hover { background: #0056b3; }
-#output {
-  margin-top: 20px;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: left;
-  max-width: 850px;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 0px 0px 5px rgba(0,0,0,0.1);
-}
-#plot { margin-top: 20px; }
-</style>
-</head>
-<body>
-
-<h1>📈 Calculadora de Derivadas - Paso a Paso</h1>
-<p>Ingresa una función en \(x\) (ej: <code>x^3 + 2x</code>, <code>sin(x)*x^2</code>, <code>(x^2+1)/(x-3)</code>)</p>
-
-<input type="text" id="funcion" placeholder="Ej: x^3 + 2x">
-<br>
-<button onclick="resolverDerivada()">Calcular derivada</button>
-<button onclick="descargarPDF()">📄 Descargar PDF</button>
-
-<div id="output"></div>
-<div id="plot"></div>
-
-<script>
-let pasosTexto = "";
-
-// Detectar tipo de derivada
-function detectarRegla(funcion) {
-    if (/\//.test(funcion)) return "Cociente";
-    if (/\*/.test(funcion) && /(sin|cos|tan|log|exp)/.test(funcion)) return "Producto + Cadena";
-    if (/\*/.test(funcion)) return "Producto";
-    if (/(sin|cos|tan|log|exp)/.test(funcion)) return "Cadena";
-    if (/x\^?\d*/.test(funcion)) return "Potencia";
-    if (/x/.test(funcion)) return "Potencia simple";
-    return "Constante";
-}
-
-// Generar explicación detallada
-function explicacionDetallada(f, regla) {
-    switch(regla) {
-        case "Constante":
-            return `
-            <p><b>${f}</b> es una constante.</p>
-            <p>La derivada de cualquier constante es cero:</p>
-            \\[
-            \\frac{d}{dx}(c) = 0
-            \\]`;
-        case "Potencia":
-            return `
-            <p>Aplicamos la regla de la potencia:</p>
-            \\[
-            \\frac{d}{dx}x^n = n \\cdot x^{n-1}
-            \\]
-            <p>Para <b>${f}</b>:</p>
-            \\[
-            \\frac{d}{dx}(${f}) = ${math.derivative(f, 'x')}
-            \\]`;
-        case "Potencia simple":
-            return `
-            <p><b>${f}</b> es de la forma \(k \cdot x\).</p>
-            \\[
-            \\frac{d}{dx}(k x) = k
-            \\]
-            <p>Entonces:</p>
-            \\[
-            ${math.derivative(f, 'x')}
-            \\]`;
-        case "Producto":
-            return `
-            <p>Regla del producto:</p>
-            \\[
-            (u v)' = u'v + uv'
-            \\]
-            <p>Sea:</p>
-            \\[
-            u = \\text{primer factor}, \quad v = \\text{segundo factor}
-            \\]
-            <p>Derivamos cada uno y sustituimos:</p>
-            \\[
-            ${math.derivative(f, 'x')}
-            \\]`;
-        case "Cociente":
-            return `
-            <p>Regla del cociente:</p>
-            \\[
-            \\left( \\frac{u}{v} \\right)' = \\frac{u'v - uv'}{v^2}
-            \\]
-            <p>Sea:</p>
-            \\[
-            u = \\text{numerador}, \quad v = \\text{denominador}
-            \\]
-            <p>Derivamos y sustituimos:</p>
-            \\[
-            ${math.derivative(f, 'x')}
-            \\]`;
-        case "Cadena":
-            return `
-            <p>Regla de la cadena:</p>
-            \\[
-            (f(g(x)))' = f'(g(x)) \cdot g'(x)
-            \\]
-            <p>Identificamos función exterior e interior, derivamos y sustituimos:</p>
-            \\[
-            ${math.derivative(f, 'x')}
-            \\]`;
-        case "Producto + Cadena":
-            return `
-            <p>Primero regla del producto:</p>
-            \\[
-            (u v)' = u'v + uv'
-            \\]
-            <p>Luego aplicamos cadena donde corresponda:</p>
-            \\[
-            ${math.derivative(f, 'x')}
-            \\]`;
-    }
-}
-
-function resolverDerivada() {
-    const entrada = document.getElementById("funcion").value.trim();
-    if (!entrada) { alert("Por favor ingresa una función."); return; }
-
-    try {
-        const derivada = math.derivative(entrada, 'x').toString();
-        const derivadaSimplificada = math.simplify(derivada).toString();
-        pasosTexto = `Cálculo paso a paso para: f(x) = ${entrada}\n\n`;
-
-        let terminos = entrada.split("+").map(t => t.trim());
-        let html = `<h3>📝 Proceso paso a paso</h3>`;
-
-        terminos.forEach(t => {
-            let regla = detectarRegla(t);
-            html += explicacionDetallada(t, regla);
-            pasosTexto += `${t}: ${regla} → ${math.derivative(t, 'x')}\n`;
-        });
-
-        html += `
-        <hr>
-        <p>Sumamos resultados:</p>
-        \\[
-        f'(x) = ${derivada}
-        \\]
-        <p>Simplificamos:</p>
-        \\[
-        f'(x) = ${derivadaSimplificada}
-        \\]`;
-
-        document.getElementById("output").innerHTML = html;
-        MathJax.typeset();
-        pasosTexto += `\nDerivada final: ${derivadaSimplificada}`;
-
-        // Graficar
-        functionPlot({
-            target: '#plot',
-            width: 700,
-            height: 400,
-            xAxis: { label: 'x' },
-            yAxis: { label: 'y' },
-            grid: true,
-            data: [
-                { fn: entrada, sampler: 'builtIn', graphType: 'polyline', color: 'blue', label: 'f(x)' },
-                { fn: derivadaSimplificada, sampler: 'builtIn', graphType: 'polyline', color: 'red', label: "f'(x)" }
-            ]
-        });
-
-    } catch (err) {
-        alert("Error en la función. Revisa la sintaxis.");
-        console.error(err);
-    }
-}
-
-function descargarPDF() {
-    if (!pasosTexto) { alert("Primero calcula la derivada."); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Calculadora de Derivadas - Paso a Paso", 10, 10);
-    doc.setFontSize(11);
-    let lineas = doc.splitTextToSize(pasosTexto, 180);
-    doc.text(lineas, 10, 20);
-    doc.save("derivada.pdf");
-}
-</script>
-
-</body>
-</html>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Derivadas</title>
+    <!-- Tailwind CSS para el diseño responsivo y moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilo personalizado para KaTeX, asegurando que se vea bien */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Un color de fondo suave */
+        }
+        .katex-display > .katex {
+            font-size: 1.5rem !important; /* Aumenta el tamaño de las fórmulas */
+            display: block; /* Asegura que cada fórmula esté en su propia línea */
+        }
+        /* Estilo para el contenedor de la explicación */
+        .explanation-container p, .explanation-container li {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+    </style>
+    <!-- KaTeX para renderizar fórmulas matemáticas de alta calidad -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" xintegrity="sha384-GvrxHw9fQ5E0V6b8gXF+R7h81aB6U7k6a7/fFf8V2t1r+c6M9Xg+D9f9F+B/P+G6c" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" xintegrity="sha384-f7U4+a/D3T0l4+L+B1f8r8I6lP5Z6F8n6A+r+fP9G6c/8fF2F5+e7c/P+G6c" crossorigin="anonymous"></script>
