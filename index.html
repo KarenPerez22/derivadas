@@ -1,72 +1,65 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora de Derivadas - Paso a Paso</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Derivadas - Paso a Paso</title>
 
-  <!-- Librerías -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
-  <script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-  </script>
+<!-- Librerías -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+<script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f7f7f7;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #333;
-    }
-    input {
-      padding: 8px;
-      width: 300px;
-      font-size: 1rem;
-    }
-    button {
-      padding: 8px 15px;
-      margin: 5px;
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    #output {
-      margin-top: 20px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: left;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-      box-shadow: 0px 0px 5px rgba(0,0,0,0.1);
-    }
-    #plot {
-      margin-top: 20px;
-    }
-    code {
-      background: #eee;
-      padding: 2px 5px;
-      border-radius: 4px;
-    }
-  </style>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #f7f7f7;
+  padding: 20px;
+}
+h1 {
+  color: #333;
+}
+input {
+  padding: 8px;
+  width: 300px;
+}
+button {
+  padding: 8px 15px;
+  margin: 5px;
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+button:hover {
+  background: #0056b3;
+}
+#output {
+  margin-top: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: left;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0px 0px 5px rgba(0,0,0,0.1);
+}
+#plot {
+  margin-top: 20px;
+}
+</style>
 </head>
 <body>
 
 <h1>📈 Calculadora de Derivadas - Paso a Paso</h1>
-<p>Escribe una función en <b>x</b> (Ejemplo: <code>x^3 + 2x</code>, <code>sin(x)*x^2</code>, <code>(x^2+1)/(x-3)</code>)</p>
+<p>Ingresa una función en \(x\) (ej: <code>x^3 + 2x</code>, <code>sin(x)*x^2</code>, <code>(x^2+1)/(x-3)</code>)</p>
 
 <input type="text" id="funcion" placeholder="Ej: x^3 + 2x">
 <br>
@@ -79,37 +72,97 @@
 <script>
 let pasosTexto = "";
 
+// Detectar tipo de término para explicar correctamente
 function detectarRegla(termino) {
-    if (/sin|cos|tan|log|exp/.test(termino) && /\*/.test(termino)) {
-        return "Producto + Cadena";
-    } else if (/\//.test(termino)) {
-        return "Cociente";
-    } else if (/sin|cos|tan|log|exp/.test(termino)) {
-        return "Cadena";
-    } else if (/\*/.test(termino)) {
-        return "Producto";
-    } else if (/x\^?\d*/.test(termino) && !isNaN(termino.replace("x",""))) {
-        return "Potencia";
-    } else if (/x/.test(termino)) {
-        return "Potencia simple";
-    } else {
-        return "Constante";
-    }
+    if (/\//.test(termino)) return "Cociente";
+    if (/\*/.test(termino) && /(sin|cos|tan|log|exp)/.test(termino)) return "Producto + Cadena";
+    if (/\*/.test(termino)) return "Producto";
+    if (/(sin|cos|tan|log|exp)/.test(termino)) return "Cadena";
+    if (/x\^?\d*/.test(termino)) return "Potencia";
+    if (/x/.test(termino)) return "Potencia simple";
+    return "Constante";
 }
 
-function generarExplicacion(funcion) {
-    let terminos = funcion.split("+").map(t => t.trim());
-    let pasosHTML = `<h3>📝 Proceso paso a paso:</h3><ol>`;
-    pasosTexto += `Proceso paso a paso:\n`;
-
-    terminos.forEach(t => {
-        let regla = detectarRegla(t);
-        pasosHTML += `<li><b>${t}</b>: Se aplica la regla de <b>${regla}</b>.</li>`;
-        pasosTexto += `${t}: Se aplica la regla de ${regla}.\n`;
-    });
-
-    pasosHTML += `</ol>`;
-    return pasosHTML;
+// Generar explicación detallada de cada regla
+function explicacionRegla(termino, regla) {
+    switch(regla) {
+        case "Constante":
+            return `
+            <b>${termino}</b> es una constante, y la derivada de cualquier constante es 0:
+            \\[
+            \\frac{d}{dx}(c) = 0
+            \\]
+            `;
+        case "Potencia":
+            return `
+            Aplicamos la regla de la potencia:
+            \\[
+            \\frac{d}{dx}x^n = n \\cdot x^{n-1}
+            \\]
+            Para <b>${termino}</b>:
+            \\[
+            \\frac{d}{dx}(${termino}) = ${math.derivative(termino, 'x')}
+            \\]
+            `;
+        case "Potencia simple":
+            return `
+            <b>${termino}</b> es de la forma \\(k \\cdot x\\).
+            Derivada de \\(x\\) es 1:
+            \\[
+            \\frac{d}{dx}(k x) = k
+            \\]
+            Para <b>${termino}</b>:
+            \\[
+            ${math.derivative(termino, 'x')}
+            \\]
+            `;
+        case "Producto":
+            return `
+            Usamos la regla del producto:
+            \\[
+            (u \\cdot v)' = u'v + uv'
+            \\]
+            Para <b>${termino}</b>:
+            Sea \\(u\\) el primer factor y \\(v\\) el segundo.
+            Derivamos cada uno y aplicamos la fórmula:
+            \\[
+            ${math.derivative(termino, 'x')}
+            \\]
+            `;
+        case "Cociente":
+            return `
+            Usamos la regla del cociente:
+            \\[
+            \\left( \\frac{u}{v} \\right)' = \\frac{u'v - uv'}{v^2}
+            \\]
+            Para <b>${termino}</b>:
+            \\[
+            ${math.derivative(termino, 'x')}
+            \\]
+            `;
+        case "Cadena":
+            return `
+            Usamos la regla de la cadena:
+            \\[
+            (f(g(x)))' = f'(g(x)) \\cdot g'(x)
+            \\]
+            Para <b>${termino}</b>:
+            \\[
+            ${math.derivative(termino, 'x')}
+            \\]
+            `;
+        case "Producto + Cadena":
+            return `
+            Primero aplicamos la regla del producto:
+            \\[
+            (u \\cdot v)' = u'v + uv'
+            \\]
+            Luego, dentro de cada derivada, aplicamos la regla de la cadena cuando corresponda:
+            \\[
+            ${math.derivative(termino, 'x')}
+            \\]
+            `;
+    }
 }
 
 function resolverDerivada() {
@@ -120,27 +173,38 @@ function resolverDerivada() {
     }
 
     try {
-        // Derivada
+        // Calcular derivada
         const derivada = math.derivative(entrada, 'x').toString();
         const derivadaSimplificada = math.simplify(derivada).toString();
 
-        // Explicación
         pasosTexto = `Cálculo de derivada para: f(x) = ${entrada}\n\n`;
-        let explicacion = generarExplicacion(entrada);
 
-        // Resultado
-        let resultadoHTML = `
-            ${explicacion}
-            <p>\\[ f'(x) = ${derivada} \\]</p>
-            <p>\\[ \\text{Simplificada: } f'(x) = ${derivadaSimplificada} \\]</p>
+        let terminos = entrada.split("+").map(t => t.trim());
+        let explicacionHTML = `<h3>📝 Proceso paso a paso:</h3>`;
+
+        terminos.forEach(t => {
+            let regla = detectarRegla(t);
+            explicacionHTML += `<p>${explicacionRegla(t, regla)}</p>`;
+            pasosTexto += `${t}: ${regla} -> ${math.derivative(t, 'x')}\n`;
+        });
+
+        explicacionHTML += `
+        <hr>
+        <p>Sumamos los resultados de cada término:</p>
+        \\[
+        f'(x) = ${derivada}
+        \\]
+        <p>Y simplificando:</p>
+        \\[
+        f'(x) = ${derivadaSimplificada}
+        \\]
         `;
 
-        document.getElementById("output").innerHTML = resultadoHTML;
-        MathJax.typeset(); // Renderizar fórmulas
+        document.getElementById("output").innerHTML = explicacionHTML;
+        MathJax.typeset();
+        pasosTexto += `\nDerivada final simplificada: ${derivadaSimplificada}`;
 
-        pasosTexto += `\nDerivada final: ${derivadaSimplificada}`;
-
-        // Gráfica
+        // Graficar
         functionPlot({
             target: '#plot',
             width: 700,
@@ -155,7 +219,7 @@ function resolverDerivada() {
         });
 
     } catch (error) {
-        alert("Error en la función. Verifica la sintaxis.");
+        alert("Error en la función. Revisa la sintaxis.");
         console.error(error);
     }
 }
@@ -170,7 +234,8 @@ function descargarPDF() {
     doc.setFontSize(14);
     doc.text("Calculadora de Derivadas - Paso a Paso", 10, 10);
     doc.setFontSize(11);
-    doc.text(pasosTexto, 10, 20);
+    let lineas = doc.splitTextToSize(pasosTexto, 180);
+    doc.text(lineas, 10, 20);
     doc.save("derivada.pdf");
 }
 </script>
